@@ -31,6 +31,9 @@ OUTPUT_PATH = Path(os.environ.get("EMOJI_OUTPUT", "/output/entry.txt"))
 # characters, not only white space.
 MIN_CHARS = 1
 MAX_CHARS = 8
+# An exact tie on win rate goes to the smaller text, so cap the byte size
+# too: one emoji is 4 bytes, and anything bigger only hurts the tie-break.
+MAX_BYTES = 8
 
 
 def check_emoji(emoji: str) -> str:
@@ -38,8 +41,15 @@ def check_emoji(emoji: str) -> str:
     assert emoji, "emoji must not be empty"
     assert len(emoji) == 1, "entry must be exactly one emoji, one code point"
     assert emoji.strip(), "emoji must not be only white space"
+    # A letter or digit would still pass the 1–8 character gate, but it is
+    # not an emoji: it would lose to any real emoji before the judge, so
+    # require a pictograph, not alphanumeric text.
+    assert not emoji.isalnum(), "emoji must be a pictograph, not a letter or digit"
     assert MIN_CHARS <= len(emoji) <= MAX_CHARS, (
         f"emoji is {len(emoji)} chars, outside the {MIN_CHARS}-{MAX_CHARS} gate"
+    )
+    assert len(emoji.encode("utf-8")) <= MAX_BYTES, (
+        f"emoji is {len(emoji.encode('utf-8'))} bytes, over the {MAX_BYTES} cap"
     )
     return emoji
 
